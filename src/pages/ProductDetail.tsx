@@ -1,13 +1,16 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowLeft, Package, Ruler, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useCart } from "@/context/CartContext";
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const product = products.find(p => p.id === Number(id));
 
   if (!product) {
@@ -30,7 +33,17 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
-    toast.success("Produk berhasil ditambahkan ke keranjang!");
+    if (product) {
+      addToCart(product);
+      toast.success("Produk berhasil ditambahkan ke keranjang!");
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (product) {
+      addToCart(product);
+      navigate("/cart");
+    }
   };
 
   return (
@@ -129,6 +142,7 @@ const ProductDetail = () => {
                 variant="secondary" 
                 className="w-full h-12 text-lg" 
                 size="lg"
+                onClick={handleBuyNow}
                 disabled={product.stock === 0}
               >
                 Beli Sekarang

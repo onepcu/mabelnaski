@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { products } from "@/data/products";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   id: number;
@@ -12,6 +15,15 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ id, name, price, image, category }: ProductCardProps) => {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = () => {
+    const product = products.find(p => p.id === id);
+    if (product) {
+      addToCart(product);
+      toast.success("Produk berhasil ditambahkan ke keranjang!");
+    }
+  };
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
       <Link to={`/product/${id}`}>
@@ -35,7 +47,7 @@ const ProductCard = ({ id, name, price, image, category }: ProductCardProps) => 
         </p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" variant="secondary">
+        <Button className="w-full" variant="secondary" onClick={handleAddToCart}>
           <ShoppingCart className="mr-2 h-4 w-4" />
           Tambah ke Keranjang
         </Button>
