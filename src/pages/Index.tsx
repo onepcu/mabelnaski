@@ -40,9 +40,11 @@ const Index = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="h-12 px-8 text-lg border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                Hubungi Kami
-              </Button>
+              <Link to="/contact">
+                <Button size="lg" variant="outline" className="h-12 px-8 text-lg border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                  Hubungi Kami
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -126,9 +128,11 @@ const Index = () => {
           <p className="text-xl mb-8 text-primary-foreground/90 max-w-2xl mx-auto">
             Konsultasikan kebutuhan mebel Anda dengan tim profesional kami
           </p>
-          <Button size="lg" variant="secondary" className="h-12 px-8 text-lg">
-            Konsultasi Gratis
-          </Button>
+          <Link to="/contact">
+            <Button size="lg" variant="secondary" className="h-12 px-8 text-lg">
+              Konsultasi Gratis
+            </Button>
+          </Link>
         </div>
       </section>
 

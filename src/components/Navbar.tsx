@@ -28,8 +28,8 @@ const Navbar = () => {
             <Link to="/products" className="text-foreground hover:text-primary transition-colors">
               Kategori
             </Link>
-            <Link to="/" className="text-foreground hover:text-primary transition-colors">
-              Tentang
+            <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
+              Kontak
             </Link>
           </div>
 
@@ -82,11 +82,11 @@ const Navbar = () => {
               Kategori
             </Link>
             <Link
-              to="/"
+              to="/contact"
               className="block text-foreground hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              Tentang
+              Kontak
             </Link>
           </div>
         )}
