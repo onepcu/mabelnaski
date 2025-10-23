@@ -1,0 +1,368 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  description: string;
+  material: string;
+  dimensions: string;
+  color: string;
+  stock: number;
+}
+
+const ProductsManagement = () => {
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    image: "",
+    category: "",
+    description: "",
+    material: "",
+    dimensions: "",
+    color: "",
+    stock: "",
+  });
+
+  useEffect(() => {
+    checkAdminAndLoad();
+  }, []);
+
+  const checkAdminAndLoad = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .single();
+
+      if (!roleData) {
+        toast.error("Tidak memiliki akses admin");
+        navigate("/");
+        return;
+      }
+
+      await loadProducts();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Gagal memuat data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("Gagal memuat produk");
+      return;
+    }
+
+    setProducts(data || []);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const productData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        image: formData.image,
+        category: formData.category,
+        description: formData.description,
+        material: formData.material,
+        dimensions: formData.dimensions,
+        color: formData.color,
+        stock: parseInt(formData.stock),
+      };
+
+      if (editingProduct) {
+        const { error } = await supabase
+          .from("products")
+          .update(productData)
+          .eq("id", editingProduct.id);
+
+        if (error) throw error;
+        toast.success("Produk berhasil diupdate");
+      } else {
+        const { error } = await supabase
+          .from("products")
+          .insert([productData]);
+
+        if (error) throw error;
+        toast.success("Produk berhasil ditambahkan");
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      await loadProducts();
+    } catch (error: any) {
+      toast.error("Gagal menyimpan produk: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      price: product.price.toString(),
+      image: product.image,
+      category: product.category,
+      description: product.description,
+      material: product.material,
+      dimensions: product.dimensions,
+      color: product.color,
+      stock: product.stock.toString(),
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Yakin ingin menghapus produk ini?")) return;
+
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Gagal menghapus produk");
+      return;
+    }
+
+    toast.success("Produk berhasil dihapus");
+    await loadProducts();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      price: "",
+      image: "",
+      category: "",
+      description: "",
+      material: "",
+      dimensions: "",
+      color: "",
+      stock: "",
+    });
+    setEditingProduct(null);
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-muted/20">
+      <header className="border-b bg-background">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/admin/dashboard")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Kembali
+            </Button>
+            <h1 className="text-2xl font-bold">Kelola Produk</h1>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Produk
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingProduct ? "Edit Produk" : "Tambah Produk Baru"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nama Produk</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Harga</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image">URL Gambar</Label>
+                  <Input
+                    id="image"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Kategori</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Stok</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Deskripsi</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="material">Material</Label>
+                    <Input
+                      id="material"
+                      value={formData.material}
+                      onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dimensions">Dimensi</Label>
+                    <Input
+                      id="dimensions"
+                      value={formData.dimensions}
+                      onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="color">Warna</Label>
+                    <Input
+                      id="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">
+                  {editingProduct ? "Update Produk" : "Tambah Produk"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Daftar Produk</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Harga</TableHead>
+                  <TableHead>Stok</TableHead>
+                  <TableHead>Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell>Rp {product.price.toLocaleString("id-ID")}</TableCell>
+                    <TableCell>{product.stock}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(product)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+};
+
+export default ProductsManagement;

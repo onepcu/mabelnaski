@@ -1,10 +1,11 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 
 const Products = () => {
+  const { products, isLoading } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   
   const categories = ["Semua", ...Array.from(new Set(products.map(p => p.category)))];
@@ -40,23 +41,31 @@ const Products = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              name={product.name}
-              price={product.price}
-              image={product.image}
-              category={product.category}
-            />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Tidak ada produk dalam kategori ini</p>
+            <p className="text-muted-foreground">Memuat produk...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  image={product.image}
+                  category={product.category}
+                />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Tidak ada produk dalam kategori ini</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

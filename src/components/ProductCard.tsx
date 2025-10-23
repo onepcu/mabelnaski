@@ -3,11 +3,11 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { products } from "@/data/products";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductCardProps {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: string;
@@ -17,10 +17,15 @@ interface ProductCardProps {
 const ProductCard = ({ id, name, price, image, category }: ProductCardProps) => {
   const { addToCart } = useCart();
 
-  const handleAddToCart = () => {
-    const product = products.find(p => p.id === id);
+  const handleAddToCart = async () => {
+    const { data: product } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+    
     if (product) {
-      addToCart(product);
+      addToCart(product as any);
       toast.success("Produk berhasil ditambahkan ke keranjang!");
     }
   };

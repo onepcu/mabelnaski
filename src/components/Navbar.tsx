@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, X } from "lucide-react";
+import { ShoppingCart, Menu, X, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -25,11 +25,12 @@ const Navbar = () => {
             <Link to="/products" className="text-foreground hover:text-primary transition-colors">
               Produk
             </Link>
-            <Link to="/products" className="text-foreground hover:text-primary transition-colors">
-              Kategori
-            </Link>
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Kontak
+            </Link>
+            <Link to="/auth" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Admin
             </Link>
           </div>
 
@@ -75,18 +76,19 @@ const Navbar = () => {
               Produk
             </Link>
             <Link
-              to="/products"
-              className="block text-foreground hover:text-primary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Kategori
-            </Link>
-            <Link
               to="/contact"
               className="block text-foreground hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               Kontak
+            </Link>
+            <Link
+              to="/auth"
+              className="block text-foreground hover:text-primary transition-colors flex items-center gap-1"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
             </Link>
           </div>
         )}

@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Truck, Shield, HeadphonesIcon } from "lucide-react";
 import heroImage from "@/assets/hero-furniture.jpg";
 
 const Index = () => {
+  const { products } = useProducts();
   const featuredProducts = products.slice(0, 4);
 
   return (

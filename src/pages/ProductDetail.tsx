@@ -1,17 +1,67 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
-import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowLeft, Package, Ruler, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
+import { Product } from "@/hooks/useProducts";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const product = products.find(p => p.id === Number(id));
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadProduct();
+  }, [id]);
+
+  const loadProduct = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      setProduct(data);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Gagal memuat produk");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (product) {
+      addToCart(product as any);
+      toast.success("Produk berhasil ditambahkan ke keranjang!");
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (product) {
+      addToCart(product as any);
+      navigate("/cart");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 text-center">
+          <p className="text-muted-foreground">Memuat produk...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -31,20 +81,6 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart(product);
-      toast.success("Produk berhasil ditambahkan ke keranjang!");
-    }
-  };
-
-  const handleBuyNow = () => {
-    if (product) {
-      addToCart(product);
-      navigate("/cart");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">

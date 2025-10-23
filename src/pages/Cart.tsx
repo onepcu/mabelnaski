@@ -1,43 +1,99 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useCart } from "@/context/CartContext";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const checkoutSchema = z.object({
+  name: z.string().trim().min(1, { message: "Nama harus diisi" }).max(100),
+  phone: z.string().trim().min(10, { message: "Nomor telepon harus valid" }).max(15),
+});
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (cart.length === 0) {
       toast.error("Keranjang belanja kosong!");
       return;
     }
 
-    // Format pesan WhatsApp
-    let message = "Halo, saya ingin memesan:\n\n";
-    
-    cart.forEach((item, index) => {
-      message += `${index + 1}. ${item.name}\n`;
-      message += `   Jumlah: ${item.quantity}\n`;
-      message += `   Harga: Rp ${(item.price * item.quantity).toLocaleString("id-ID")}\n\n`;
-    });
+    setIsCheckingOut(true);
 
-    message += `Total: Rp ${totalPrice.toLocaleString("id-ID")}\n\n`;
-    message += "Terima kasih!";
+    try {
+      // Validate input
+      const validated = checkoutSchema.parse({ name: customerName, phone: customerPhone });
 
-    // Nomor WhatsApp Alam (ganti dengan nomor yang benar)
-    // Format: 62 untuk Indonesia, hilangkan angka 0 di depan
-    const phoneNumber = "6281234567890"; // Ganti dengan nomor WhatsApp Alam
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+      // Save order to database
+      const orderData = {
+        customer_name: validated.name,
+        customer_phone: validated.phone,
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        })),
+        total_price: totalPrice,
+        status: "pending"
+      };
 
-    // Buka WhatsApp
-    window.open(whatsappUrl, "_blank");
-    
-    // Optional: Clear cart setelah checkout
-    toast.success("Mengarahkan ke WhatsApp...");
+      const { error } = await supabase
+        .from("orders")
+        .insert([orderData]);
+
+      if (error) throw error;
+
+      // Format WhatsApp message
+      let message = `Halo, saya ${validated.name} ingin memesan:\n\n`;
+      
+      cart.forEach((item, index) => {
+        message += `${index + 1}. ${item.name}\n`;
+        message += `   Jumlah: ${item.quantity}\n`;
+        message += `   Harga: Rp ${(item.price * item.quantity).toLocaleString("id-ID")}\n\n`;
+      });
+
+      message += `Total: Rp ${totalPrice.toLocaleString("id-ID")}\n\n`;
+      message += `Nama: ${validated.name}\n`;
+      message += `Telepon: ${validated.phone}\n\n`;
+      message += "Terima kasih!";
+
+      // WhatsApp number - replace with actual number
+      const phoneNumber = "6281234567890"; // GANTI DENGAN NOMOR ALAM
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+      // Open WhatsApp
+      window.open(whatsappUrl, "_blank");
+      
+      toast.success("Pesanan berhasil disimpan!");
+      clearCart();
+      setIsDialogOpen(false);
+      setCustomerName("");
+      setCustomerPhone("");
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Gagal membuat pesanan: " + (error.message || "Terjadi kesalahan"));
+      }
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   if (cart.length === 0) {
@@ -183,13 +239,45 @@ const Cart = () => {
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full h-12 text-lg mb-3" 
-                  size="lg"
-                  onClick={handleCheckout}
-                >
-                  Checkout via WhatsApp
-                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full h-12 text-lg mb-3" size="lg">
+                      Checkout via WhatsApp
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Informasi Pembeli</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCheckout} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nama Lengkap</Label>
+                        <Input
+                          id="name"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          placeholder="Masukkan nama Anda"
+                          required
+                          disabled={isCheckingOut}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Nomor Telepon</Label>
+                        <Input
+                          id="phone"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="08xx xxxx xxxx"
+                          required
+                          disabled={isCheckingOut}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={isCheckingOut}>
+                        {isCheckingOut ? "Memproses..." : "Lanjut ke WhatsApp"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
 
                 <Button 
                   variant="outline" 
