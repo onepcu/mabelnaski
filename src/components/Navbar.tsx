@@ -1,12 +1,53 @@
-import { ShoppingCart, Menu, X, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, Menu, X, Shield, LogOut, LogIn } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { totalItems } = useCart();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        setIsLoggedIn(true);
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        setIsAdmin(roleData?.role === "admin");
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkAuth();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    toast.success("Logout berhasil");
+    navigate("/");
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -28,10 +69,23 @@ const Navbar = () => {
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Kontak
             </Link>
-            <Link to="/auth" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-              <Shield className="h-4 w-4" />
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link to="/admin/dashboard" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                Dashboard Admin
+              </Link>
+            )}
+            {isLoggedIn ? (
+              <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-1">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            ) : (
+              <Link to="/auth" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Cart & Mobile Menu */}
@@ -82,14 +136,38 @@ const Navbar = () => {
             >
               Kontak
             </Link>
-            <Link
-              to="/auth"
-              className="block text-foreground hover:text-primary transition-colors flex items-center gap-1"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Shield className="h-4 w-4" />
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin/dashboard"
+                className="block text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Shield className="h-4 w-4" />
+                Dashboard Admin
+              </Link>
+            )}
+            {isLoggedIn ? (
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }} 
+                className="w-full justify-start flex items-center gap-1"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            ) : (
+              <Link
+                to="/auth"
+                className="block text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <LogIn className="h-4 w-4" />
+                Login
+              </Link>
+            )}
           </div>
         )}
       </div>
