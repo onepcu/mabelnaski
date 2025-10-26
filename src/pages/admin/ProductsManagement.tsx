@@ -41,6 +41,8 @@ const ProductsManagement = () => {
     color: "",
     stock: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -91,15 +93,41 @@ const ProductsManagement = () => {
     setProducts(data || []);
   };
 
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setIsUploading(true);
 
     try {
+      let imageUrl = formData.image;
+
+      // Upload image if a new file is selected
+      if (imageFile) {
+        imageUrl = await handleImageUpload(imageFile);
+      }
+
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
-        image: formData.image,
+        image: imageUrl,
         category: formData.category,
         description: formData.description,
         material: formData.material,
@@ -132,6 +160,7 @@ const ProductsManagement = () => {
       toast.error("Gagal menyimpan produk: " + error.message);
     } finally {
       setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
@@ -181,6 +210,7 @@ const ProductsManagement = () => {
       stock: "",
     });
     setEditingProduct(null);
+    setImageFile(null);
   };
 
   if (isLoading) {
@@ -237,13 +267,28 @@ const ProductsManagement = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="image">URL Gambar</Label>
+                  <Label htmlFor="image">Upload Gambar Produk</Label>
                   <Input
                     id="image"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    required
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                      }
+                    }}
+                    disabled={isUploading}
                   />
+                  {formData.image && (
+                    <div className="mt-2">
+                      <img 
+                        src={formData.image} 
+                        alt="Preview" 
+                        className="w-32 h-32 object-cover rounded"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -304,8 +349,12 @@ const ProductsManagement = () => {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full">
-                  {editingProduct ? "Update Produk" : "Tambah Produk"}
+                <Button type="submit" className="w-full" disabled={isUploading}>
+                  {isUploading 
+                    ? "Mengupload..." 
+                    : editingProduct 
+                    ? "Update Produk" 
+                    : "Tambah Produk"}
                 </Button>
               </form>
             </DialogContent>

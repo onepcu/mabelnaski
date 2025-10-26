@@ -128,8 +128,8 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Admin Access</CardTitle>
-            <CardDescription>Login atau daftar untuk mengakses panel admin</CardDescription>
+            <CardTitle>Masuk ke Akun</CardTitle>
+            <CardDescription>Login atau daftar untuk melanjutkan</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
