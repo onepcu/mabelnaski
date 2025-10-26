@@ -119,7 +119,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <Link to="/admin/products">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -130,6 +130,20 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <Button className="w-full">Buka Manajemen Produk</Button>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/admin/categories">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle>Kelola Kategori</CardTitle>
+                <CardDescription>
+                  Tambah atau hapus kategori produk
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full">Buka Manajemen Kategori</Button>
               </CardContent>
             </Card>
           </Link>

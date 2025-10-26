@@ -2,13 +2,15 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/button";
 
 const Products = () => {
   const { products, isLoading } = useProducts();
+  const { categories: categoriesData } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   
-  const categories = ["Semua", ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ["Semua", ...categoriesData.map(c => c.name)];
   
   const filteredProducts = selectedCategory === "Semua" 
     ? products 

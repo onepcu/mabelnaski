@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,37 @@ const checkoutSchema = z.object({
 });
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { cart, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleCheckoutClick = () => {
+    if (!isLoggedIn) {
+      toast.error("Silakan login terlebih dahulu untuk checkout");
+      navigate("/auth");
+      return;
+    }
+    setIsDialogOpen(true);
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,11 +266,13 @@ const Cart = () => {
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full h-12 text-lg mb-3" size="lg">
-                      Checkout via WhatsApp
-                    </Button>
-                  </DialogTrigger>
+                  <Button 
+                    className="w-full h-12 text-lg mb-3" 
+                    size="lg"
+                    onClick={handleCheckoutClick}
+                  >
+                    Checkout via WhatsApp
+                  </Button>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Informasi Pembeli</DialogTitle>
