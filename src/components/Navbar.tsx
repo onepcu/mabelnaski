@@ -75,16 +75,11 @@ const Navbar = () => {
                 Dashboard Admin
               </Link>
             )}
-            {isLoggedIn ? (
+            {isLoggedIn && (
               <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-1">
                 <LogOut className="h-4 w-4" />
                 Logout
               </Button>
-            ) : (
-              <Link to="/auth" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                <LogIn className="h-4 w-4" />
-                Login
-              </Link>
             )}
           </div>
 
@@ -92,8 +87,9 @@ const Navbar = () => {
           <div className="flex items-center space-x-2">
             {!isLoggedIn && (
               <Link to="/auth">
-                <Button variant="ghost" size="icon">
-                  <LogIn className="h-5 w-5" />
+                <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Login
                 </Button>
               </Link>
             )}

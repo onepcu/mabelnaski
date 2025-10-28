@@ -13,8 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Plus, ArrowLeft } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 
 const CategoriesManagement = () => {
   const navigate = useNavigate();
@@ -116,17 +117,8 @@ const CategoriesManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/dashboard")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Kelola Kategori</h1>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <AdminLayout title="Manajemen Kategori">
+      <div className="space-y-6">
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Tambah Kategori Baru</CardTitle>
@@ -178,8 +170,8 @@ const CategoriesManagement = () => {
             </Table>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 

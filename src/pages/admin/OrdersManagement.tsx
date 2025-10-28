@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 
 interface Order {
   id: string;
@@ -123,19 +124,8 @@ const OrdersManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/admin/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Kembali
-          </Button>
-          <h1 className="text-2xl font-bold">Kelola Pesanan</h1>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <Card>
+    <AdminLayout title="Manajemen Pesanan">
+      <Card>
           <CardHeader>
             <CardTitle>Daftar Pesanan</CardTitle>
           </CardHeader>
@@ -222,8 +212,7 @@ const OrdersManagement = () => {
             </Table>
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </AdminLayout>
   );
 };
 

@@ -15,9 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCategories } from "@/hooks/useCategories";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 
 interface Product {
   id: string;
@@ -227,16 +228,9 @@ const ProductsManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/admin/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali
-            </Button>
-            <h1 className="text-2xl font-bold">Kelola Produk</h1>
-          </div>
+    <AdminLayout title="Manajemen Produk">
+      <div className="space-y-6">
+        <div className="flex justify-end">
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -381,9 +375,7 @@ const ProductsManagement = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Daftar Produk</CardTitle>
@@ -430,8 +422,8 @@ const ProductsManagement = () => {
             </Table>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 
