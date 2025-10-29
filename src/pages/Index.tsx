@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
+import Footer from "@/components/Footer";
+import { ProductSkeleton } from "@/components/ProductSkeleton";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Truck, Shield, HeadphonesIcon } from "lucide-react";
 import heroImage from "@/assets/hero-furniture.jpg";
 
 const Index = () => {
-  const { products } = useProducts();
+  const { products, isLoading } = useProducts();
   const featuredProducts = products.slice(0, 4);
 
   return (
@@ -99,16 +101,20 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                name={product.name}
-                price={product.price}
-                image={product.image}
-                category={product.category}
-              />
-            ))}
+            {isLoading ? (
+              [...Array(4)].map((_, i) => <ProductSkeleton key={i} />)
+            ) : (
+              featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  image={product.image}
+                  category={product.category}
+                />
+              ))
+            )}
           </div>
 
           <div className="text-center">
@@ -137,53 +143,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-card py-12 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-2xl font-bold text-primary mb-4">MebelKu</h3>
-              <p className="text-muted-foreground">
-                Solusi mebel berkualitas untuk rumah impian Anda
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Produk</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Meja & Kursi</li>
-                <li>Sofa</li>
-                <li>Tempat Tidur</li>
-                <li>Lemari</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Perusahaan</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Tentang Kami</li>
-                <li>Kontak</li>
-                <li>Blog</li>
-                <li>Karir</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Bantuan</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>FAQ</li>
-                <li>Pengiriman</li>
-                <li>Pengembalian</li>
-                <li>Garansi</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 MebelKu. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

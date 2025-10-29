@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/context/CartContext";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
@@ -124,9 +125,9 @@ const Cart = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 py-16 flex-1">
           <div className="text-center max-w-md mx-auto">
             <ShoppingBag className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-foreground mb-4">
@@ -143,15 +144,16 @@ const Cart = () => {
             </Link>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="mb-6">
           <Link to="/products">
             <Button variant="ghost">
@@ -331,6 +333,8 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
+import Footer from "@/components/Footer";
+import { ProductSkeleton } from "@/components/ProductSkeleton";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/button";
@@ -17,10 +19,10 @@ const Products = () => {
     : products.filter(p => p.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-4">Katalog Produk</h1>
           <p className="text-muted-foreground">
@@ -44,8 +46,10 @@ const Products = () => {
 
         {/* Products Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Memuat produk...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <ProductSkeleton key={i} />
+            ))}
           </div>
         ) : (
           <>
@@ -70,6 +74,8 @@ const Products = () => {
           </>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 };

@@ -2,6 +2,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { ProductDetailSkeleton } from "@/components/ProductSkeleton";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowLeft, Package, Ruler, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,20 +56,25 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-muted-foreground">Memuat produk...</p>
+        <div className="container mx-auto px-4 py-8 flex-1">
+          <Button variant="ghost" className="mb-6" disabled>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali ke Produk
+          </Button>
+          <ProductDetailSkeleton />
         </div>
+        <Footer />
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 flex-1">
           <p className="text-center text-muted-foreground">Produk tidak ditemukan</p>
           <div className="text-center mt-4">
             <Link to="/products">
@@ -78,15 +85,16 @@ const ProductDetail = () => {
             </Link>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <Link to="/products">
           <Button variant="ghost" className="mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -199,6 +207,8 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

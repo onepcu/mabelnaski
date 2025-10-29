@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,10 +54,10 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16 flex-1">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -276,6 +277,8 @@ const Contact = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

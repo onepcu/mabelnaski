@@ -224,7 +224,13 @@ const ProductsManagement = () => {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <AdminLayout title="Manajemen Produk">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-pulse text-muted-foreground">Memuat data...</div>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
