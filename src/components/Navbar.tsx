@@ -1,6 +1,7 @@
-import { ShoppingCart, Menu, X, Shield, LogOut, LogIn } from "lucide-react";
+import { ShoppingCart, Menu, X, Shield, LogOut, LogIn, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { totalItems } = useCart();
   const navigate = useNavigate();
 
@@ -19,6 +21,7 @@ const Navbar = () => {
       
       if (session) {
         setIsLoggedIn(true);
+        
         const { data: roleData } = await supabase
           .from("user_roles")
           .select("role")
@@ -26,9 +29,19 @@ const Navbar = () => {
           .single();
         
         setIsAdmin(roleData?.role === "admin");
+
+        // Load avatar
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        setAvatarUrl(profile?.avatar_url || null);
       } else {
         setIsLoggedIn(false);
         setIsAdmin(false);
+        setAvatarUrl(null);
       }
     };
 
@@ -70,7 +83,13 @@ const Navbar = () => {
               Kontak
             </Link>
             {isLoggedIn && (
-              <Link to="/profile" className="text-foreground hover:text-primary transition-colors">
+              <Link to="/profile" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={avatarUrl || undefined} />
+                  <AvatarFallback>
+                    <User className="h-3 w-3" />
+                  </AvatarFallback>
+                </Avatar>
                 Profil
               </Link>
             )}

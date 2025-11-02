@@ -327,49 +327,51 @@ const Cart = () => {
                   </Button>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Informasi Pembeli</DialogTitle>
+                      <DialogTitle>Konfirmasi Pesanan</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCheckout} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nama Lengkap</Label>
-                        <Input
-                          id="name"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          placeholder="Masukkan nama Anda"
-                          required
-                          disabled={isCheckingOut}
-                        />
+                      <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Nama Lengkap</Label>
+                          <p className="font-medium">{customerName || "Belum diisi"}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Nomor Telepon</Label>
+                          <p className="font-medium">{customerPhone || "Belum diisi"}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Alamat Pengiriman</Label>
+                          <p className="font-medium whitespace-pre-line">{customerAddress || "Belum diisi"}</p>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Nomor Telepon</Label>
-                        <Input
-                          id="phone"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          placeholder="08xx xxxx xxxx"
-                          required
-                          disabled={isCheckingOut}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="address">Alamat Lengkap</Label>
-                        <Textarea
-                          id="address"
-                          value={customerAddress}
-                          onChange={(e) => setCustomerAddress(e.target.value)}
-                          placeholder="Masukkan alamat lengkap pengiriman"
-                          required
-                          disabled={isCheckingOut}
-                          rows={3}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Alamat dari profil Anda akan otomatis tersimpan. <Link to="/profile" className="text-primary hover:underline">Edit Profil</Link>
+
+                      {(!customerName || !customerPhone || !customerAddress) && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                          <p className="text-sm text-destructive">
+                            Data profil belum lengkap. Silakan{" "}
+                            <Link to="/profile" className="font-semibold underline">
+                              lengkapi profil Anda
+                            </Link>{" "}
+                            terlebih dahulu.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Pastikan data di atas sudah benar. Jika perlu diubah, silakan{" "}
+                          <Link to="/profile" className="text-primary hover:underline font-medium">
+                            edit profil
+                          </Link>.
                         </p>
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={isCheckingOut || !customerName || !customerPhone || !customerAddress}
+                        >
+                          {isCheckingOut ? "Memproses..." : "Konfirmasi & Lanjut ke WhatsApp"}
+                        </Button>
                       </div>
-                      <Button type="submit" className="w-full" disabled={isCheckingOut}>
-                        {isCheckingOut ? "Memproses..." : "Lanjut ke WhatsApp"}
-                      </Button>
                     </form>
                   </DialogContent>
                 </Dialog>
