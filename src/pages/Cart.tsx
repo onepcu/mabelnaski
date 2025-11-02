@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/context/CartContext";
@@ -16,6 +17,7 @@ import { z } from "zod";
 const checkoutSchema = z.object({
   name: z.string().trim().min(1, { message: "Nama harus diisi" }).max(100),
   phone: z.string().trim().min(10, { message: "Nomor telepon harus valid" }).max(15),
+  address: z.string().trim().min(10, { message: "Alamat minimal 10 karakter" }).max(500),
 });
 
 const Cart = () => {
@@ -24,19 +26,51 @@ const Cart = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndLoadProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
+
+      if (session) {
+        // Load profile data
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (profile) {
+          setCustomerName(profile.full_name || "");
+          setCustomerPhone(profile.phone || "");
+          setCustomerAddress(profile.address || "");
+        }
+      }
     };
 
-    checkAuth();
+    checkAuthAndLoadProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsLoggedIn(!!session);
+      if (session) {
+        setTimeout(() => {
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", session.user.id)
+            .single()
+            .then(({ data: profile }) => {
+              if (profile) {
+                setCustomerName(profile.full_name || "");
+                setCustomerPhone(profile.phone || "");
+                setCustomerAddress(profile.address || "");
+              }
+            });
+        }, 0);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -63,7 +97,24 @@ const Cart = () => {
 
     try {
       // Validate input
-      const validated = checkoutSchema.parse({ name: customerName, phone: customerPhone });
+      const validated = checkoutSchema.parse({ 
+        name: customerName, 
+        phone: customerPhone,
+        address: customerAddress 
+      });
+
+      // Update profile with latest data
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from("profiles")
+          .upsert({
+            user_id: session.user.id,
+            full_name: validated.name,
+            phone: validated.phone,
+            address: validated.address,
+          });
+      }
 
       // Save order to database
       const orderData = {
@@ -96,11 +147,12 @@ const Cart = () => {
 
       message += `Total: Rp ${totalPrice.toLocaleString("id-ID")}\n\n`;
       message += `Nama: ${validated.name}\n`;
-      message += `Telepon: ${validated.phone}\n\n`;
+      message += `Telepon: ${validated.phone}\n`;
+      message += `Alamat: ${validated.address}\n\n`;
       message += "Terima kasih!";
 
-      // WhatsApp number - replace with actual number
-      const phoneNumber = "6281234567890"; // GANTI DENGAN NOMOR ALAM
+      // WhatsApp number
+      const phoneNumber = "6281455095274";
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
 
@@ -110,8 +162,6 @@ const Cart = () => {
       toast.success("Pesanan berhasil disimpan!");
       clearCart();
       setIsDialogOpen(false);
-      setCustomerName("");
-      setCustomerPhone("");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -301,6 +351,21 @@ const Cart = () => {
                           required
                           disabled={isCheckingOut}
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Alamat Lengkap</Label>
+                        <Textarea
+                          id="address"
+                          value={customerAddress}
+                          onChange={(e) => setCustomerAddress(e.target.value)}
+                          placeholder="Masukkan alamat lengkap pengiriman"
+                          required
+                          disabled={isCheckingOut}
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Alamat dari profil Anda akan otomatis tersimpan. <Link to="/profile" className="text-primary hover:underline">Edit Profil</Link>
+                        </p>
                       </div>
                       <Button type="submit" className="w-full" disabled={isCheckingOut}>
                         {isCheckingOut ? "Memproses..." : "Lanjut ke WhatsApp"}

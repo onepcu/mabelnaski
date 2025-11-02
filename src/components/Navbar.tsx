@@ -69,6 +69,11 @@ const Navbar = () => {
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Kontak
             </Link>
+            {isLoggedIn && (
+              <Link to="/profile" className="text-foreground hover:text-primary transition-colors">
+                Profil
+              </Link>
+            )}
             {isAdmin && (
               <Link to="/admin/dashboard" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                 <Shield className="h-4 w-4" />
@@ -139,6 +144,15 @@ const Navbar = () => {
             >
               Kontak
             </Link>
+            {isLoggedIn && (
+              <Link
+                to="/profile"
+                className="block text-foreground hover:text-primary transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Profil
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/admin/dashboard"
