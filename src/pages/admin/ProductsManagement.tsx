@@ -25,12 +25,14 @@ interface Product {
   name: string;
   price: number;
   image: string;
+  images?: string[];
   category: string;
   description: string;
   material: string;
   dimensions: string;
   color: string;
   stock: number;
+  order_count?: number;
 }
 
 const ProductsManagement = () => {
@@ -51,7 +53,8 @@ const ProductsManagement = () => {
     color: "",
     stock: "",
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -127,17 +130,23 @@ const ProductsManagement = () => {
     setIsUploading(true);
 
     try {
-      let imageUrl = formData.image;
+      let allImages = [...existingImages];
 
-      // Upload image if a new file is selected
-      if (imageFile) {
-        imageUrl = await handleImageUpload(imageFile);
+      // Upload new images if selected
+      if (imageFiles.length > 0) {
+        const uploadPromises = imageFiles.map(file => handleImageUpload(file));
+        const newImageUrls = await Promise.all(uploadPromises);
+        allImages = [...allImages, ...newImageUrls];
       }
+
+      // Use first image as main image
+      const mainImage = allImages[0] || formData.image;
 
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
-        image: imageUrl,
+        image: mainImage,
+        images: allImages,
         category: formData.category,
         description: formData.description,
         material: formData.material,
@@ -187,6 +196,7 @@ const ProductsManagement = () => {
       color: product.color,
       stock: product.stock.toString(),
     });
+    setExistingImages(product.images || [product.image]);
     setIsDialogOpen(true);
   };
 
@@ -220,7 +230,8 @@ const ProductsManagement = () => {
       stock: "",
     });
     setEditingProduct(null);
-    setImageFile(null);
+    setImageFiles([]);
+    setExistingImages([]);
   };
 
   if (isLoading) {
@@ -276,26 +287,66 @@ const ProductsManagement = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="image">Upload Gambar Produk</Label>
+                  <Label htmlFor="image">Upload Gambar Produk (Bisa Lebih dari 1)</Label>
                   <Input
                     id="image"
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImageFile(file);
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        setImageFiles(files);
                       }
                     }}
                     disabled={isUploading}
                   />
-                  {formData.image && (
+                  <p className="text-xs text-muted-foreground">
+                    Pilih beberapa gambar sekaligus dengan Ctrl+Click (Windows) atau Cmd+Click (Mac)
+                  </p>
+                  
+                  {/* Existing Images */}
+                  {existingImages.length > 0 && (
                     <div className="mt-2">
-                      <img 
-                        src={formData.image} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded"
-                      />
+                      <p className="text-sm font-medium mb-2">Gambar saat ini:</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {existingImages.map((img, idx) => (
+                          <div key={idx} className="relative">
+                            <img 
+                              src={img} 
+                              alt={`Preview ${idx + 1}`} 
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6"
+                              onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== idx))}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* New Images Preview */}
+                  {imageFiles.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium mb-2">Gambar baru ({imageFiles.length}):</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {imageFiles.map((file, idx) => (
+                          <div key={idx} className="relative">
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              alt={`New ${idx + 1}`} 
+                              className="w-full h-24 object-cover rounded"
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

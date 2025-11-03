@@ -83,8 +83,10 @@ export type Database = {
           dimensions: string
           id: string
           image: string
+          images: string[] | null
           material: string
           name: string
+          order_count: number | null
           price: number
           stock: number
           updated_at: string | null
@@ -97,8 +99,10 @@ export type Database = {
           dimensions: string
           id?: string
           image: string
+          images?: string[] | null
           material: string
           name: string
+          order_count?: number | null
           price: number
           stock?: number
           updated_at?: string | null
@@ -111,8 +115,10 @@ export type Database = {
           dimensions?: string
           id?: string
           image?: string
+          images?: string[] | null
           material?: string
           name?: string
+          order_count?: number | null
           price?: number
           stock?: number
           updated_at?: string | null

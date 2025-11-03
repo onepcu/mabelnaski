@@ -10,7 +10,10 @@ import heroImage from "@/assets/hero-furniture.jpg";
 
 const Index = () => {
   const { products, isLoading } = useProducts();
-  const featuredProducts = products.slice(0, 4);
+  // Featured products based on order count (trending)
+  const featuredProducts = [...products]
+    .sort((a, b) => (b.order_count || 0) - (a.order_count || 0))
+    .slice(0, 4);
 
   return (
     <div className="min-h-screen bg-background">

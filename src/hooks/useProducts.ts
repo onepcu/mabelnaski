@@ -6,12 +6,14 @@ export interface Product {
   name: string;
   price: number;
   image: string;
+  images?: string[];
   category: string;
   description: string;
   material: string;
   dimensions: string;
   color: string;
   stock: number;
+  order_count?: number;
 }
 
 export const useProducts = () => {
