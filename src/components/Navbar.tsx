@@ -2,6 +2,12 @@ import { ShoppingCart, Menu, X, Shield, LogOut, LogIn, User } from "lucide-react
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,28 +88,11 @@ const Navbar = () => {
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Kontak
             </Link>
-            {isLoggedIn && (
-              <Link to="/profile" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={avatarUrl || undefined} />
-                  <AvatarFallback>
-                    <User className="h-3 w-3" />
-                  </AvatarFallback>
-                </Avatar>
-                Profil
-              </Link>
-            )}
             {isAdmin && (
               <Link to="/admin/dashboard" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                 <Shield className="h-4 w-4" />
                 Dashboard Admin
               </Link>
-            )}
-            {isLoggedIn && (
-              <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-1">
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
             )}
           </div>
 
@@ -127,6 +116,33 @@ const Navbar = () => {
                 )}
               </Button>
             </Link>
+
+            {isLoggedIn && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={avatarUrl || undefined} />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      Profil Saya
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer">
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <Button
               variant="ghost"
