@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 
@@ -25,6 +27,9 @@ const OrdersManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editPhone, setEditPhone] = useState("");
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -119,6 +124,35 @@ const OrdersManagement = () => {
     }
   };
 
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    setEditName(order.customer_name);
+    setEditPhone(order.customer_phone);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingOrder) return;
+
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          customer_name: editName,
+          customer_phone: editPhone,
+        })
+        .eq("id", editingOrder.id);
+
+      if (error) throw error;
+
+      toast.success("Pesanan berhasil diupdate");
+
+      setEditingOrder(null);
+      loadOrders();
+    } catch (error: any) {
+      toast.error("Error: " + error.message);
+    }
+  };
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -139,6 +173,7 @@ const OrdersManagement = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Aksi</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -206,12 +241,60 @@ const OrdersManagement = () => {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditOrder(order)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
+
+        {/* Edit Order Dialog */}
+        <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Pesanan</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Nama Customer</Label>
+                <Input
+                  id="edit-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Nomor WhatsApp</Label>
+                <Input
+                  id="edit-phone"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveEdit} className="flex-1">
+                  Simpan
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingOrder(null)}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
     </AdminLayout>
   );
 };

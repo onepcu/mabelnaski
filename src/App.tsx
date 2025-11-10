@@ -16,6 +16,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import ProductsManagement from "./pages/admin/ProductsManagement";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import OrdersManagement from "./pages/admin/OrdersManagement";
+import Kasir from "./pages/admin/Kasir";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/admin/products" element={<ProductsManagement />} />
             <Route path="/admin/categories" element={<CategoriesManagement />} />
             <Route path="/admin/orders" element={<OrdersManagement />} />
+            <Route path="/admin/kasir" element={<Kasir />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -191,6 +191,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_cashier_transaction: {
+        Args: { p_items: Json; p_payment: number; p_total_price: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "kasir"

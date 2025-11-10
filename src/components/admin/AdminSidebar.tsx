@@ -1,4 +1,4 @@
-import { Home, Package, FolderTree, ShoppingCart } from "lucide-react";
+import { Home, Package, FolderTree, ShoppingCart, CreditCard } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const menuItems = [
   { title: "Kelola Produk", url: "/admin/products", icon: Package },
   { title: "Kelola Kategori", url: "/admin/categories", icon: FolderTree },
   { title: "Kelola Pesanan", url: "/admin/orders", icon: ShoppingCart },
+  { title: "Kasir", url: "/admin/kasir", icon: CreditCard },
 ];
 
 export function AdminSidebar() {
