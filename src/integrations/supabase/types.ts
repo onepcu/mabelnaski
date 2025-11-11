@@ -35,6 +35,54 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          applicable_products: string[] | null
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_purchase: number | null
+          updated_at: string
+          used_count: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_products?: string[] | null
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number | null
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_products?: string[] | null
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number | null
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           confirmed_at: string | null
@@ -193,6 +241,11 @@ export type Database = {
       }
       process_cashier_transaction: {
         Args: { p_items: Json; p_payment: number; p_total_price: number }
+        Returns: Json
+      }
+      use_coupon: { Args: { p_code: string }; Returns: undefined }
+      validate_coupon: {
+        Args: { p_code: string; p_items: Json; p_total_price: number }
         Returns: Json
       }
     }

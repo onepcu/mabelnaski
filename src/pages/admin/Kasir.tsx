@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
-import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Tag } from "lucide-react";
 
 interface CartItem {
   id: string;
@@ -26,6 +26,9 @@ export default function Kasir() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [payment, setPayment] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; couponId: string } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   useEffect(() => {
     checkAccess();
@@ -131,6 +134,72 @@ export default function Kasir() {
     0
   );
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Masukkan kode kupon",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    try {
+      const { data, error } = await supabase.rpc("validate_coupon", {
+        p_code: couponCode.toUpperCase(),
+        p_total_price: totalPrice,
+        p_items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }))
+      });
+
+      if (error) throw error;
+
+      const result = data as { valid: boolean; message: string; discount: number; coupon_id?: string };
+
+      if (result.valid) {
+        setAppliedCoupon({
+          code: couponCode.toUpperCase(),
+          discount: result.discount,
+          couponId: result.coupon_id || ""
+        });
+        toast({
+          title: "Berhasil",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Gagal",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Gagal memvalidasi kupon: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    toast({
+      title: "Berhasil",
+      description: "Kupon berhasil dihapus",
+    });
+  };
+
+  const finalTotal = appliedCoupon ? totalPrice - appliedCoupon.discount : totalPrice;
+
   const handleProcessTransaction = async () => {
     if (cart.length === 0) {
       toast({
@@ -157,7 +226,7 @@ export default function Kasir() {
       // Process transaction and reduce stock
       const { data, error } = await supabase.rpc("process_cashier_transaction", {
         p_items: cart as any,
-        p_total_price: totalPrice,
+        p_total_price: finalTotal,
         p_payment: paymentAmount,
       });
 
@@ -174,10 +243,15 @@ export default function Kasir() {
         return;
       }
 
+      // Increment coupon usage if applied
+      if (appliedCoupon) {
+        await supabase.rpc("use_coupon", { p_code: appliedCoupon.code });
+      }
+
       // Create order record
       const { error: orderError } = await supabase.from("orders").insert({
         items: cart as any,
-        total_price: totalPrice,
+        total_price: finalTotal,
         status: "completed",
         customer_name: "Kasir (Offline)",
         customer_phone: "-",
@@ -193,6 +267,8 @@ export default function Kasir() {
       // Reset
       setCart([]);
       setPayment("");
+      setAppliedCoupon(null);
+      setCouponCode("");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -316,9 +392,71 @@ export default function Kasir() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
+                <Label className="text-sm">Subtotal</Label>
+                <p className="text-2xl font-bold">
+                  Rp {totalPrice.toLocaleString("id-ID")}
+                </p>
+              </div>
+
+              {/* Coupon Input */}
+              <div className="space-y-2 py-3 border-y border-border">
+                <Label className="text-sm font-medium">Kode Promo</Label>
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Masukkan kode kupon"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="pl-9"
+                        onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon || !couponCode.trim()}
+                    >
+                      {isApplyingCoupon ? "..." : "Pakai"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{appliedCoupon.code}</p>
+                        <p className="text-xs text-primary">
+                          Hemat Rp {appliedCoupon.discount.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {appliedCoupon && (
+                <div>
+                  <Label className="text-sm">Diskon ({appliedCoupon.code})</Label>
+                  <p className="text-xl font-bold text-primary">
+                    -Rp {appliedCoupon.discount.toLocaleString("id-ID")}
+                  </p>
+                </div>
+              )}
+
+              <div>
                 <Label className="text-lg">Total</Label>
                 <p className="text-3xl font-bold text-primary">
-                  Rp {totalPrice.toLocaleString("id-ID")}
+                  Rp {finalTotal.toLocaleString("id-ID")}
                 </p>
               </div>
 
@@ -333,12 +471,12 @@ export default function Kasir() {
                 />
               </div>
 
-              {payment && parseFloat(payment) >= totalPrice && (
+              {payment && parseFloat(payment) >= finalTotal && (
                 <div>
                   <Label>Kembalian</Label>
                   <p className="text-2xl font-bold text-green-600">
                     Rp{" "}
-                    {(parseFloat(payment) - totalPrice).toLocaleString("id-ID")}
+                    {(parseFloat(payment) - finalTotal).toLocaleString("id-ID")}
                   </p>
                 </div>
               )}

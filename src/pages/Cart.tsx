@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/context/CartContext";
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -29,6 +29,9 @@ const Cart = () => {
   const [customerAddress, setCustomerAddress] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; couponId: string } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   useEffect(() => {
     const checkAuthAndLoadProfile = async () => {
@@ -85,6 +88,54 @@ const Cart = () => {
     setIsDialogOpen(true);
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Masukkan kode kupon");
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    try {
+      const { data, error } = await supabase.rpc("validate_coupon", {
+        p_code: couponCode.toUpperCase(),
+        p_total_price: totalPrice,
+        p_items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }))
+      });
+
+      if (error) throw error;
+
+      const result = data as { valid: boolean; message: string; discount: number; coupon_id?: string };
+
+      if (result.valid) {
+        setAppliedCoupon({
+          code: couponCode.toUpperCase(),
+          discount: result.discount,
+          couponId: result.coupon_id || ""
+        });
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error: any) {
+      toast.error("Gagal memvalidasi kupon: " + error.message);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    toast.success("Kupon berhasil dihapus");
+  };
+
+  const finalTotal = appliedCoupon ? totalPrice - appliedCoupon.discount : totalPrice;
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -126,7 +177,7 @@ const Cart = () => {
           price: item.price,
           quantity: item.quantity
         })),
-        total_price: totalPrice,
+        total_price: finalTotal,
         status: "pending"
       };
 
@@ -135,6 +186,11 @@ const Cart = () => {
         .insert([orderData]);
 
       if (error) throw error;
+
+      // Increment coupon usage if applied
+      if (appliedCoupon) {
+        await supabase.rpc("use_coupon", { p_code: appliedCoupon.code });
+      }
 
       // Format WhatsApp message
       let message = `Halo, saya ${validated.name} ingin memesan:\n\n`;
@@ -145,7 +201,13 @@ const Cart = () => {
         message += `   Harga: Rp ${(item.price * item.quantity).toLocaleString("id-ID")}\n\n`;
       });
 
-      message += `Total: Rp ${totalPrice.toLocaleString("id-ID")}\n\n`;
+      message += `Subtotal: Rp ${totalPrice.toLocaleString("id-ID")}\n`;
+      
+      if (appliedCoupon) {
+        message += `Diskon (${appliedCoupon.code}): -Rp ${appliedCoupon.discount.toLocaleString("id-ID")}\n`;
+      }
+      
+      message += `Total: Rp ${finalTotal.toLocaleString("id-ID")}\n\n`;
       message += `Nama: ${validated.name}\n`;
       message += `Telepon: ${validated.phone}\n`;
       message += `Alamat: ${validated.address}\n\n`;
@@ -303,6 +365,60 @@ const Cart = () => {
                     <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} item)</span>
                     <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
                   </div>
+
+                  {/* Coupon Input */}
+                  <div className="space-y-2 py-3 border-y border-border">
+                    <Label className="text-sm font-medium">Kode Promo</Label>
+                    {!appliedCoupon ? (
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Masukkan kode kupon"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            className="pl-9"
+                            onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={handleApplyCoupon}
+                          disabled={isApplyingCoupon || !couponCode.trim()}
+                        >
+                          {isApplyingCoupon ? "..." : "Pakai"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary" />
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">{appliedCoupon.code}</p>
+                            <p className="text-xs text-primary">
+                              Hemat Rp {appliedCoupon.discount.toLocaleString("id-ID")}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveCoupon}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-primary font-medium">
+                      <span>Diskon ({appliedCoupon.code})</span>
+                      <span>-Rp {appliedCoupon.discount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-muted-foreground">
                     <span>Ongkir</span>
                     <span className="text-secondary">GRATIS</span>
@@ -311,7 +427,7 @@ const Cart = () => {
                     <div className="flex justify-between text-xl font-bold text-foreground">
                       <span>Total</span>
                       <span className="text-primary">
-                        Rp {totalPrice.toLocaleString("id-ID")}
+                        Rp {finalTotal.toLocaleString("id-ID")}
                       </span>
                     </div>
                   </div>
