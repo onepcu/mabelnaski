@@ -35,6 +35,8 @@ const Auth = () => {
 
         if (roleData?.role === "admin") {
           navigate("/admin/dashboard");
+        } else if (roleData?.role === "kasir") {
+          navigate("/admin/kasir");
         } else {
           navigate("/");
         }
@@ -70,6 +72,8 @@ const Auth = () => {
         // Redirect based on role
         if (roleData?.role === "admin") {
           navigate("/admin/dashboard");
+        } else if (roleData?.role === "kasir") {
+          navigate("/admin/kasir");
         } else {
           navigate("/");
         }

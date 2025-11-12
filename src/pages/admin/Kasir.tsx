@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
-import { Minus, Plus, Trash2, ShoppingCart, Tag } from "lucide-react";
+import { Minus, Plus, Trash2, Tag, LogOut } from "lucide-react";
 
 interface CartItem {
   id: string;
@@ -29,6 +26,7 @@ export default function Kasir() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; couponId: string } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkAccess();
@@ -55,6 +53,11 @@ export default function Kasir() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
   };
 
   const addToCart = (product: typeof products[0]) => {
@@ -220,10 +223,18 @@ export default function Kasir() {
       return;
     }
 
+    if (paymentAmount < finalTotal) {
+      toast({
+        title: "Pembayaran Kurang",
+        description: "Jumlah pembayaran kurang dari total",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      // Process transaction and reduce stock
       const { data, error } = await supabase.rpc("process_cashier_transaction", {
         p_items: cart as any,
         p_total_price: finalTotal,
@@ -243,12 +254,10 @@ export default function Kasir() {
         return;
       }
 
-      // Increment coupon usage if applied
       if (appliedCoupon) {
         await supabase.rpc("use_coupon", { p_code: appliedCoupon.code });
       }
 
-      // Create order record
       const { error: orderError } = await supabase.from("orders").insert({
         items: cart as any,
         total_price: finalTotal,
@@ -264,7 +273,6 @@ export default function Kasir() {
         description: `Kembalian: Rp ${result.change.toLocaleString("id-ID")}`,
       });
 
-      // Reset
       setCart([]);
       setPayment("");
       setAppliedCoupon(null);
@@ -280,219 +288,274 @@ export default function Kasir() {
     }
   };
 
+  const addNumberToPayment = (num: string) => {
+    setPayment(prev => prev + num);
+  };
+
+  const clearPayment = () => {
+    setPayment("");
+  };
+
+  const backspacePayment = () => {
+    setPayment(prev => prev.slice(0, -1));
+  };
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <AdminLayout title="Kasir">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Products List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Daftar Produk</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p>Memuat produk...</p>
+    <div className="h-screen w-screen bg-background overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between shadow-lg">
+        <h1 className="text-2xl font-bold">Sistem Kasir</h1>
+        <Button variant="secondary" size="sm" onClick={handleLogout}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Keluar
+        </Button>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Side - Cart & Calculator */}
+        <div className="w-1/2 border-r border-border flex flex-col">
+          {/* Cart */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <h2 className="text-xl font-bold mb-4">Keranjang Belanja</h2>
+            
+            {cart.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Keranjang kosong
+              </p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto">
-                {products.map((product) => (
+              <div className="space-y-3">
+                {cart.map((item) => (
                   <div
-                    key={product.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => addToCart(product)}
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 border rounded-lg bg-card"
                   >
                     <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
+                      src={item.image}
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded"
                     />
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{product.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate">{item.name}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Rp {product.price.toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Stok: {product.stock}
+                        Rp {item.price.toLocaleString("id-ID")}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateQuantity(item.id, -1)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateQuantity(item.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeFromCart(item.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Cart & Payment */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Keranjang
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {cart.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Keranjang kosong
-                </p>
+          {/* Calculator & Payment */}
+          <div className="border-t border-border p-6 space-y-4 bg-muted/30">
+            {/* Coupon */}
+            <div className="space-y-2">
+              {!appliedCoupon ? (
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Kode kupon"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="pl-9"
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponCode.trim()}
+                  >
+                    Pakai
+                  </Button>
+                </div>
               ) : (
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-4 p-4 border rounded-lg"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Rp {item.price.toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateQuantity(item.id, -1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateQuantity(item.id, 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="font-semibold text-sm">{appliedCoupon.code}</p>
+                      <p className="text-xs text-primary">
+                        -Rp {appliedCoupon.discount.toLocaleString("id-ID")}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveCoupon}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Hapus
+                  </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Pembayaran</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm">Subtotal</Label>
-                <p className="text-2xl font-bold">
-                  Rp {totalPrice.toLocaleString("id-ID")}
-                </p>
+            {/* Total */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span className="font-semibold">Rp {totalPrice.toLocaleString("id-ID")}</span>
               </div>
-
-              {/* Coupon Input */}
-              <div className="space-y-2 py-3 border-y border-border">
-                <Label className="text-sm font-medium">Kode Promo</Label>
-                {!appliedCoupon ? (
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Masukkan kode kupon"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        className="pl-9"
-                        onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                      />
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={handleApplyCoupon}
-                      disabled={isApplyingCoupon || !couponCode.trim()}
-                    >
-                      {isApplyingCoupon ? "..." : "Pakai"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">{appliedCoupon.code}</p>
-                        <p className="text-xs text-primary">
-                          Hemat Rp {appliedCoupon.discount.toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRemoveCoupon}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      Hapus
-                    </Button>
-                  </div>
-                )}
-              </div>
-
               {appliedCoupon && (
-                <div>
-                  <Label className="text-sm">Diskon ({appliedCoupon.code})</Label>
-                  <p className="text-xl font-bold text-primary">
-                    -Rp {appliedCoupon.discount.toLocaleString("id-ID")}
-                  </p>
+                <div className="flex justify-between text-sm text-primary">
+                  <span>Diskon:</span>
+                  <span className="font-semibold">-Rp {appliedCoupon.discount.toLocaleString("id-ID")}</span>
                 </div>
               )}
+              <div className="flex justify-between text-xl font-bold border-t pt-2">
+                <span>Total:</span>
+                <span className="text-primary">Rp {finalTotal.toLocaleString("id-ID")}</span>
+              </div>
+            </div>
 
-              <div>
-                <Label className="text-lg">Total</Label>
-                <p className="text-3xl font-bold text-primary">
-                  Rp {finalTotal.toLocaleString("id-ID")}
+            {/* Payment Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Pembayaran</label>
+              <Input
+                type="text"
+                value={payment ? `Rp ${parseFloat(payment).toLocaleString("id-ID")}` : ""}
+                readOnly
+                placeholder="Rp 0"
+                className="text-2xl font-bold text-center"
+              />
+            </div>
+
+            {/* Number Pad */}
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                <Button
+                  key={num}
+                  variant="outline"
+                  size="lg"
+                  onClick={() => addNumberToPayment(num.toString())}
+                  className="h-14 text-lg font-semibold"
+                >
+                  {num}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={backspacePayment}
+                className="h-14 text-lg font-semibold"
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => addNumberToPayment("0")}
+                className="h-14 text-lg font-semibold"
+              >
+                0
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={clearPayment}
+                className="h-14 text-lg font-semibold"
+              >
+                C
+              </Button>
+            </div>
+
+            {/* Change Display */}
+            {payment && parseFloat(payment) >= finalTotal && (
+              <div className="text-center p-3 bg-primary/10 rounded-lg">
+                <p className="text-sm text-muted-foreground">Kembalian</p>
+                <p className="text-2xl font-bold text-primary">
+                  Rp {(parseFloat(payment) - finalTotal).toLocaleString("id-ID")}
                 </p>
               </div>
+            )}
 
-              <div>
-                <Label htmlFor="payment">Jumlah Pembayaran</Label>
-                <Input
-                  id="payment"
-                  type="number"
-                  placeholder="0"
-                  value={payment}
-                  onChange={(e) => setPayment(e.target.value)}
-                />
+            {/* Process Button */}
+            <Button
+              size="lg"
+              onClick={handleProcessTransaction}
+              disabled={isProcessing || cart.length === 0}
+              className="w-full h-14 text-lg font-semibold"
+            >
+              {isProcessing ? "Memproses..." : "Proses Transaksi"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Side - Products */}
+        <div className="w-1/2 flex flex-col">
+          <div className="p-6 border-b border-border">
+            <Input
+              placeholder="Cari produk..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <p className="text-center text-muted-foreground">Memuat produk...</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => addToCart(product)}
+                    className="flex flex-col items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <div className="w-full">
+                      <h3 className="font-semibold line-clamp-1">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Rp {product.price.toLocaleString("id-ID")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stok: {product.stock}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
-
-              {payment && parseFloat(payment) >= finalTotal && (
-                <div>
-                  <Label>Kembalian</Label>
-                  <p className="text-2xl font-bold text-green-600">
-                    Rp{" "}
-                    {(parseFloat(payment) - finalTotal).toLocaleString("id-ID")}
-                  </p>
-                </div>
-              )}
-
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleProcessTransaction}
-                disabled={isProcessing || cart.length === 0}
-              >
-                {isProcessing ? "Memproses..." : "Proses Transaksi"}
-              </Button>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
