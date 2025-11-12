@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
-import { Minus, Plus, Trash2, Tag, LogOut } from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
+import { Minus, Plus, Trash2, Tag, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CartItem {
   id: string;
@@ -20,6 +22,7 @@ export default function Kasir() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { products, isLoading } = useProducts();
+  const { categories } = useCategories();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [payment, setPayment] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -27,6 +30,9 @@ export default function Kasir() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; couponId: string } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     checkAccess();
@@ -300,8 +306,16 @@ export default function Kasir() {
     setPayment(prev => prev.slice(0, -1));
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -320,7 +334,7 @@ export default function Kasir() {
         {/* Left Side - Cart & Calculator */}
         <div className="w-1/2 border-r border-border flex flex-col">
           {/* Cart */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-[0.6] overflow-y-auto p-6 space-y-4">
             <h2 className="text-xl font-bold mb-4">Keranjang Belanja</h2>
             
             {cart.length === 0 ? (
@@ -376,7 +390,7 @@ export default function Kasir() {
           </div>
 
           {/* Calculator & Payment */}
-          <div className="border-t border-border p-6 space-y-4 bg-muted/30">
+          <div className="flex-[0.4] border-t border-border p-4 space-y-3 bg-muted/30 overflow-y-auto">
             {/* Coupon */}
             <div className="space-y-2">
               {!appliedCoupon ? (
@@ -423,7 +437,7 @@ export default function Kasir() {
             </div>
 
             {/* Total */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
                 <span className="font-semibold">Rp {totalPrice.toLocaleString("id-ID")}</span>
@@ -434,58 +448,58 @@ export default function Kasir() {
                   <span className="font-semibold">-Rp {appliedCoupon.discount.toLocaleString("id-ID")}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold border-t pt-2">
+              <div className="flex justify-between text-lg font-bold border-t pt-1">
                 <span>Total:</span>
                 <span className="text-primary">Rp {finalTotal.toLocaleString("id-ID")}</span>
               </div>
             </div>
 
             {/* Payment Input */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-medium">Pembayaran</label>
               <Input
                 type="text"
                 value={payment ? `Rp ${parseFloat(payment).toLocaleString("id-ID")}` : ""}
                 readOnly
                 placeholder="Rp 0"
-                className="text-2xl font-bold text-center"
+                className="text-xl font-bold text-center"
               />
             </div>
 
             {/* Number Pad */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <Button
                   key={num}
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={() => addNumberToPayment(num.toString())}
-                  className="h-14 text-lg font-semibold"
+                  className="h-10 text-base font-semibold"
                 >
                   {num}
                 </Button>
               ))}
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={backspacePayment}
-                className="h-14 text-lg font-semibold"
+                className="h-10 text-base font-semibold"
               >
                 ←
               </Button>
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={() => addNumberToPayment("0")}
-                className="h-14 text-lg font-semibold"
+                className="h-10 text-base font-semibold"
               >
                 0
               </Button>
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={clearPayment}
-                className="h-14 text-lg font-semibold"
+                className="h-10 text-base font-semibold"
               >
                 C
               </Button>
@@ -493,9 +507,9 @@ export default function Kasir() {
 
             {/* Change Display */}
             {payment && parseFloat(payment) >= finalTotal && (
-              <div className="text-center p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm text-muted-foreground">Kembalian</p>
-                <p className="text-2xl font-bold text-primary">
+              <div className="text-center p-2 bg-primary/10 rounded-lg">
+                <p className="text-xs text-muted-foreground">Kembalian</p>
+                <p className="text-lg font-bold text-primary">
                   Rp {(parseFloat(payment) - finalTotal).toLocaleString("id-ID")}
                 </p>
               </div>
@@ -506,7 +520,7 @@ export default function Kasir() {
               size="lg"
               onClick={handleProcessTransaction}
               disabled={isProcessing || cart.length === 0}
-              className="w-full h-14 text-lg font-semibold"
+              className="w-full h-12 text-base font-semibold"
             >
               {isProcessing ? "Memproses..." : "Proses Transaksi"}
             </Button>
@@ -515,43 +529,89 @@ export default function Kasir() {
 
         {/* Right Side - Products */}
         <div className="w-1/2 flex flex-col">
-          <div className="p-6 border-b border-border">
+          <div className="p-4 border-b border-border space-y-3">
             <Input
               placeholder="Cari produk..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full"
             />
+            <Select value={selectedCategory} onValueChange={(value) => {
+              setSelectedCategory(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Kategori" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Kategori</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
               <p className="text-center text-muted-foreground">Memuat produk...</p>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {filteredProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    className="flex flex-col items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
-                  >
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-32 object-cover rounded"
-                    />
-                    <div className="w-full">
-                      <h3 className="font-semibold line-clamp-1">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Rp {product.price.toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Stok: {product.stock}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {paginatedProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => addToCart(product)}
+                      className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-24 object-cover rounded"
+                      />
+                      <div className="w-full">
+                        <h3 className="font-semibold line-clamp-1 text-sm">{product.name}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Rp {product.price.toLocaleString("id-ID")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Stok: {product.stock}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
