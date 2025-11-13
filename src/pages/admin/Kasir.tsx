@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
-import { Minus, Plus, Trash2, Tag, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Minus, Plus, Trash2, Tag, LogOut, ChevronLeft, ChevronRight, History, Printer, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Receipt from "@/components/admin/Receipt";
 
 
 interface CartItem {
@@ -33,10 +35,31 @@ export default function Kasir() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     checkAccess();
+    loadTodayTransactions();
   }, []);
+
+  const loadTodayTransactions = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("status", "completed")
+      .gte("created_at", today.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setTransactions(data);
+    }
+  };
 
   const checkAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -274,10 +297,24 @@ export default function Kasir() {
 
       if (orderError) throw orderError;
 
-      toast({
-        title: "Transaksi Berhasil",
-        description: `Kembalian: Rp ${result.change.toLocaleString("id-ID")}`,
+      // Store last transaction for receipt
+      setLastTransaction({
+        orderNumber: `TRX${Date.now().toString().slice(-8)}`,
+        date: new Date().toLocaleString("id-ID"),
+        items: cart,
+        subtotal: totalPrice,
+        discount: appliedCoupon?.discount || 0,
+        total: finalTotal,
+        payment: paymentAmount,
+        change: result.change,
+        couponCode: appliedCoupon?.code,
       });
+
+      // Show receipt dialog
+      setShowReceiptDialog(true);
+
+      // Reload transactions
+      loadTodayTransactions();
 
       setCart([]);
       setPayment("");
@@ -318,24 +355,34 @@ export default function Kasir() {
     currentPage * itemsPerPage
   );
 
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
   return (
     <div className="h-screen w-screen bg-background overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between shadow-lg">
-        <h1 className="text-2xl font-bold">Sistem Kasir</h1>
-        <Button variant="secondary" size="sm" onClick={handleLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Keluar
-        </Button>
+      <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-lg">
+        <h1 className="text-lg md:text-2xl font-bold">Sistem Kasir</h1>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setShowHistoryDialog(true)}>
+            <History className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Riwayat</span>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Keluar</span>
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side - Cart & Calculator */}
-        <div className="w-1/2 border-r border-border flex flex-col">
+        <div className="w-full md:w-1/2 border-r border-border flex flex-col">
           {/* Cart */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(50vh)]">
-            <h2 className="text-xl font-bold mb-4">Keranjang Belanja</h2>
+          <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4 max-h-[40vh] md:max-h-[50vh]">
+            <h2 className="text-lg md:text-xl font-bold mb-2 md:mb-4">Keranjang Belanja</h2>
             
             {cart.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
@@ -390,7 +437,7 @@ export default function Kasir() {
           </div>
 
           {/* Calculator & Payment */}
-          <div className="flex-shrink-0 border-t border-border p-4 space-y-3 bg-muted/30 overflow-y-auto max-h-[calc(50vh)]">
+          <div className="flex-shrink-0 border-t border-border p-3 md:p-4 space-y-2 md:space-y-3 bg-muted/30 overflow-y-auto max-h-[60vh] md:max-h-[50vh]">
             {/* Coupon */}
             <div className="space-y-2">
               {!appliedCoupon ? (
@@ -467,7 +514,7 @@ export default function Kasir() {
             </div>
 
             {/* Number Pad */}
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1 md:gap-1.5">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <Button
                   key={num}
@@ -528,8 +575,8 @@ export default function Kasir() {
         </div>
 
         {/* Right Side - Products */}
-        <div className="w-1/2 flex flex-col">
-          <div className="p-4 border-b border-border space-y-3">
+        <div className="w-full md:w-1/2 flex flex-col">
+          <div className="p-3 md:p-4 border-b border-border space-y-2 md:space-y-3">
             <Input
               placeholder="Cari produk..."
               value={searchQuery}
@@ -537,9 +584,9 @@ export default function Kasir() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full"
+              className="w-full text-sm"
             />
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1 md:gap-2 overflow-x-auto">
               <Button
                 variant={selectedCategory === "all" ? "default" : "outline"}
                 size="sm"
@@ -568,12 +615,12 @@ export default function Kasir() {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-3 md:p-4">
             {isLoading ? (
               <p className="text-center text-muted-foreground">Memuat produk...</p>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-3">
                   {paginatedProducts.map((product) => (
                     <button
                       key={product.id}
@@ -627,6 +674,103 @@ export default function Kasir() {
           </div>
         </div>
       </div>
+
+      {/* Receipt Dialog */}
+      <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto print:shadow-none">
+          <DialogHeader className="print:hidden">
+            <DialogTitle>Transaksi Berhasil!</DialogTitle>
+          </DialogHeader>
+          
+          {lastTransaction && (
+            <>
+              <Receipt {...lastTransaction} />
+              
+              <div className="flex gap-2 mt-4 print:hidden">
+                <Button
+                  onClick={handlePrintReceipt}
+                  className="flex-1"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Nota
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReceiptDialog(false)}
+                  className="flex-1"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Tutup
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Riwayat Transaksi Hari Ini</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {transactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Belum ada transaksi hari ini
+              </p>
+            ) : (
+              transactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="border rounded-lg p-4 space-y-2"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold">
+                        {transaction.customer_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(transaction.created_at).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                    <p className="font-bold text-primary">
+                      Rp {transaction.total_price.toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                  
+                  <div className="text-sm space-y-1">
+                    {transaction.items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-muted-foreground">
+                        <span>{item.name} x{item.quantity}</span>
+                        <span>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .receipt-container,
+          .receipt-container * {
+            visibility: visible;
+          }
+          .receipt-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
