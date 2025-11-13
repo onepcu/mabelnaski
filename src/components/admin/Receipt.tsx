@@ -26,45 +26,52 @@ export default function Receipt({
   couponCode,
 }: ReceiptProps) {
   return (
-    <div className="receipt-container bg-white text-black p-8 max-w-sm mx-auto font-mono text-sm">
+    <div className="receipt-container bg-white text-black font-mono text-sm" style={{
+      width: '80mm',
+      maxWidth: '80mm',
+      margin: '0 auto',
+      padding: '20px',
+      fontSize: '12px',
+      lineHeight: '1.4'
+    }}>
       {/* Header */}
-      <div className="text-center border-b-2 border-dashed border-gray-400 pb-4 mb-4">
-        <h1 className="text-2xl font-bold mb-2">MABEL NASKI</h1>
-        <p className="text-xs">Furniture & Interior</p>
-        <p className="text-xs mt-2">Jl. Contoh No. 123</p>
-        <p className="text-xs">Telp: (021) 1234-5678</p>
+      <div style={{ textAlign: 'center', borderBottom: '2px dashed #666', paddingBottom: '12px', marginBottom: '12px' }}>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>MABEL NASKI</h1>
+        <p style={{ fontSize: '10px' }}>Furniture & Interior</p>
+        <p style={{ fontSize: '10px', marginTop: '6px' }}>Jl. Contoh No. 123</p>
+        <p style={{ fontSize: '10px' }}>Telp: (021) 1234-5678</p>
       </div>
 
       {/* Order Info */}
-      <div className="mb-4 text-xs">
-        <div className="flex justify-between mb-1">
+      <div style={{ marginBottom: '12px', fontSize: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span>No. Transaksi:</span>
-          <span className="font-bold">{orderNumber}</span>
+          <span style={{ fontWeight: 'bold' }}>{orderNumber}</span>
         </div>
-        <div className="flex justify-between">
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Tanggal:</span>
           <span>{date}</span>
         </div>
       </div>
 
       {/* Items */}
-      <div className="border-t-2 border-b-2 border-dashed border-gray-400 py-3 mb-3">
-        <table className="w-full text-xs">
+      <div style={{ borderTop: '2px dashed #666', borderBottom: '2px dashed #666', paddingTop: '10px', paddingBottom: '10px', marginBottom: '10px' }}>
+        <table style={{ width: '100%', fontSize: '10px', borderCollapse: 'collapse' }}>
           <thead>
-            <tr className="border-b border-gray-300">
-              <th className="text-left pb-2">Item</th>
-              <th className="text-center pb-2">Qty</th>
-              <th className="text-right pb-2">Harga</th>
-              <th className="text-right pb-2">Total</th>
+            <tr style={{ borderBottom: '1px solid #999' }}>
+              <th style={{ textAlign: 'left', paddingBottom: '6px' }}>Item</th>
+              <th style={{ textAlign: 'center', paddingBottom: '6px' }}>Qty</th>
+              <th style={{ textAlign: 'right', paddingBottom: '6px' }}>Harga</th>
+              <th style={{ textAlign: 'right', paddingBottom: '6px' }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={index} className="border-b border-gray-200">
-                <td className="py-2 pr-2">{item.name}</td>
-                <td className="text-center">{item.quantity}</td>
-                <td className="text-right">{item.price.toLocaleString("id-ID")}</td>
-                <td className="text-right font-semibold">
+              <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ paddingTop: '6px', paddingBottom: '6px', paddingRight: '6px' }}>{item.name}</td>
+                <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                <td style={{ textAlign: 'right' }}>{item.price.toLocaleString("id-ID")}</td>
+                <td style={{ textAlign: 'right', fontWeight: '600' }}>
                   {(item.price * item.quantity).toLocaleString("id-ID")}
                 </td>
               </tr>
@@ -74,38 +81,36 @@ export default function Receipt({
       </div>
 
       {/* Summary */}
-      <div className="space-y-2 text-xs mb-4">
-        <div className="flex justify-between">
+      <div style={{ fontSize: '10px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span>Subtotal:</span>
           <span>Rp {subtotal.toLocaleString("id-ID")}</span>
         </div>
         {discount > 0 && (
-          <>
-            <div className="flex justify-between text-green-600">
-              <span>Diskon {couponCode ? `(${couponCode})` : ""}:</span>
-              <span>- Rp {discount.toLocaleString("id-ID")}</span>
-            </div>
-          </>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', marginBottom: '6px' }}>
+            <span>Diskon {couponCode ? `(${couponCode})` : ""}:</span>
+            <span>- Rp {discount.toLocaleString("id-ID")}</span>
+          </div>
         )}
-        <div className="flex justify-between font-bold text-base border-t-2 border-gray-400 pt-2">
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', borderTop: '2px solid #666', paddingTop: '6px', marginBottom: '6px' }}>
           <span>TOTAL:</span>
           <span>Rp {total.toLocaleString("id-ID")}</span>
         </div>
-        <div className="flex justify-between border-t border-gray-300 pt-2">
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ccc', paddingTop: '6px', marginBottom: '6px' }}>
           <span>Bayar:</span>
           <span>Rp {payment.toLocaleString("id-ID")}</span>
         </div>
-        <div className="flex justify-between font-semibold">
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
           <span>Kembali:</span>
           <span>Rp {change.toLocaleString("id-ID")}</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center border-t-2 border-dashed border-gray-400 pt-4 text-xs">
-        <p className="mb-2">Terima kasih atas kunjungan Anda!</p>
-        <p className="mb-2">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
-        <p className="font-bold">*** SIMPAN STRUK INI ***</p>
+      <div style={{ textAlign: 'center', borderTop: '2px dashed #666', paddingTop: '12px', fontSize: '10px' }}>
+        <p style={{ marginBottom: '6px' }}>Terima kasih atas kunjungan Anda!</p>
+        <p style={{ marginBottom: '6px' }}>Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
+        <p style={{ fontWeight: 'bold' }}>*** SIMPAN STRUK INI ***</p>
       </div>
     </div>
   );
