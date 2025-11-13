@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { Minus, Plus, Trash2, Tag, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface CartItem {
   id: string;
@@ -334,7 +334,7 @@ export default function Kasir() {
         {/* Left Side - Cart & Calculator */}
         <div className="w-1/2 border-r border-border flex flex-col">
           {/* Cart */}
-          <div className="flex-[0.6] overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(50vh)]">
             <h2 className="text-xl font-bold mb-4">Keranjang Belanja</h2>
             
             {cart.length === 0 ? (
@@ -390,7 +390,7 @@ export default function Kasir() {
           </div>
 
           {/* Calculator & Payment */}
-          <div className="flex-[0.4] border-t border-border p-4 space-y-3 bg-muted/30 overflow-y-auto">
+          <div className="flex-shrink-0 border-t border-border p-4 space-y-3 bg-muted/30 overflow-y-auto max-h-[calc(50vh)]">
             {/* Coupon */}
             <div className="space-y-2">
               {!appliedCoupon ? (
@@ -539,22 +539,33 @@ export default function Kasir() {
               }}
               className="w-full"
             />
-            <Select value={selectedCategory} onValueChange={(value) => {
-              setSelectedCategory(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih Kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Kategori</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedCategory === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setCurrentPage(1);
+                }}
+                className="transition-all"
+              >
+                Semua Kategori
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.name ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(category.name);
+                    setCurrentPage(1);
+                  }}
+                  className="transition-all"
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4">
