@@ -756,18 +756,40 @@ export default function Kasir() {
       </Dialog>
 
       <style>{`
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
           body * {
             visibility: hidden;
           }
+          
           .receipt-container,
           .receipt-container * {
-            visibility: visible;
+            visibility: visible !important;
           }
+          
           .receipt-container {
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 !important;
+            padding: 10mm !important;
+            background-color: white !important;
+            color: black !important;
+          }
+          
+          .receipt-container table {
+            page-break-inside: avoid;
           }
         }
       `}</style>
