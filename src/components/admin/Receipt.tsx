@@ -26,13 +26,17 @@ export default function Receipt({
   couponCode,
 }: ReceiptProps) {
   return (
-    <div className="receipt-container bg-white text-black font-mono text-sm" style={{
+    <div className="receipt-container" style={{
       width: '80mm',
       maxWidth: '80mm',
       margin: '0 auto',
-      padding: '20px',
+      padding: '10mm',
+      backgroundColor: 'white',
+      color: 'black',
+      fontFamily: 'monospace',
       fontSize: '12px',
-      lineHeight: '1.4'
+      lineHeight: '1.4',
+      boxSizing: 'border-box'
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', borderBottom: '2px dashed #666', paddingBottom: '12px', marginBottom: '12px' }}>
