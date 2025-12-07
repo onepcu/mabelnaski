@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,16 +180,18 @@ export default function CouponsManagement() {
   };
 
   if (isLoading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <AdminLayout title="Manajemen Kupon">
+        <div className="flex items-center justify-center py-16">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
-    <div className="p-8">
+    <AdminLayout title="Manajemen Kupon">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Manajemen Kupon</h1>
-          <p className="text-muted-foreground">Kelola kode kupon dan diskon</p>
-        </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
@@ -447,6 +450,6 @@ export default function CouponsManagement() {
           </TableBody>
         </Table>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

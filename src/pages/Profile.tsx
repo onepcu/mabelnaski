@@ -160,7 +160,7 @@ const Profile = () => {
           phone: validated.phone,
           address: validated.address,
           avatar_url: avatarUrl,
-        });
+        }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
