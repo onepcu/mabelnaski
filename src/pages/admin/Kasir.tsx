@@ -290,9 +290,10 @@ export default function Kasir() {
       const { error: orderError } = await supabase.from("orders").insert({
         items: cart as any,
         total_price: finalTotal,
-        status: "completed",
+        status: "confirmed",
         customer_name: "Kasir (Offline)",
         customer_phone: "-",
+        confirmed_at: new Date().toISOString(),
       });
 
       if (orderError) throw orderError;
