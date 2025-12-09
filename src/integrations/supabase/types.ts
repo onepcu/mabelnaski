@@ -206,6 +206,78 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          about_content: string | null
+          accent_color: string | null
+          address: string | null
+          created_at: string
+          email: string | null
+          facebook_url: string | null
+          footer_text: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          id: string
+          instagram_url: string | null
+          logo_url: string | null
+          phone: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          site_description: string | null
+          site_name: string
+          theme_mode: string | null
+          tiktok_url: string | null
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          about_content?: string | null
+          accent_color?: string | null
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          facebook_url?: string | null
+          footer_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          id?: string
+          instagram_url?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_description?: string | null
+          site_name?: string
+          theme_mode?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          about_content?: string | null
+          accent_color?: string | null
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          facebook_url?: string | null
+          footer_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          id?: string
+          instagram_url?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_description?: string | null
+          site_name?: string
+          theme_mode?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

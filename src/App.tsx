@@ -18,6 +18,8 @@ import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import OrdersManagement from "./pages/admin/OrdersManagement";
 import CouponsManagement from "./pages/admin/CouponsManagement";
 import Kasir from "./pages/admin/Kasir";
+import SiteSettings from "./pages/admin/SiteSettings";
+import UserManagement from "./pages/admin/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="/admin/orders" element={<OrdersManagement />} />
             <Route path="/admin/coupons" element={<CouponsManagement />} />
             <Route path="/admin/kasir" element={<Kasir />} />
+            <Route path="/admin/settings" element={<SiteSettings />} />
+            <Route path="/admin/users" element={<UserManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

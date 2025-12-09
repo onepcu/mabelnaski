@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 interface AdminLayoutProps {
   children: ReactNode;
-  title: string;
+  title?: string;
 }
 
 export function AdminLayout({ children, title }: AdminLayoutProps) {
@@ -31,7 +31,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             <div className="flex h-16 items-center gap-4 px-6">
               <SidebarTrigger />
               <div className="flex-1">
-                <h1 className="text-2xl font-bold">{title}</h1>
+                {title && <h1 className="text-2xl font-bold">{title}</h1>}
               </div>
               <Link to="/">
                 <Button variant="outline" size="sm">
@@ -54,3 +54,5 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     </SidebarProvider>
   );
 }
+
+export default AdminLayout;
