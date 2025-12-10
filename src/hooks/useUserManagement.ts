@@ -15,31 +15,48 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => {
-      // Get all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*");
-
-      if (profilesError) throw profilesError;
-
-      // Get all roles
+      // First get all user roles (super_admin can see all via RLS)
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("*");
 
       if (rolesError) throw rolesError;
 
-      // Combine data
-      const usersWithRoles: UserWithRole[] = profiles.map((profile) => {
-        const userRole = roles.find((r) => r.user_id === profile.user_id);
-        return {
-          id: profile.user_id,
-          email: profile.user_id, // Will be shown as ID since we can't access auth.users
-          full_name: profile.full_name,
-          phone: profile.phone,
-          role: userRole?.role || "user",
-          created_at: profile.created_at,
-        };
+      // Get all profiles (super_admin can see all via RLS)
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (profilesError) throw profilesError;
+
+      // Combine data - use user_roles as base since that's what we need
+      const usersWithRoles: UserWithRole[] = [];
+      
+      // Add users with roles
+      roles.forEach((role) => {
+        const profile = profiles.find((p) => p.user_id === role.user_id);
+        usersWithRoles.push({
+          id: role.user_id,
+          email: role.user_id, // Will show user_id since we can't access auth.users
+          full_name: profile?.full_name || null,
+          phone: profile?.phone || null,
+          role: role.role,
+          created_at: role.created_at || new Date().toISOString(),
+        });
+      });
+
+      // Add users without roles (from profiles)
+      profiles.forEach((profile) => {
+        if (!roles.find((r) => r.user_id === profile.user_id)) {
+          usersWithRoles.push({
+            id: profile.user_id,
+            email: profile.user_id,
+            full_name: profile.full_name,
+            phone: profile.phone,
+            role: "user",
+            created_at: profile.created_at,
+          });
+        }
       });
 
       return usersWithRoles;
@@ -63,7 +80,7 @@ export const useUpdateUserRole = () => {
         .from("user_roles")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (existingRole) {
         // Update existing role

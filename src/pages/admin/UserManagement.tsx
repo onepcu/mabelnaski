@@ -4,11 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUsers, useUpdateUserRole, useDeleteUserRole } from "@/hooks/useUserManagement";
-import { Loader2, Users, Trash2, Shield, User, CreditCard, Crown } from "lucide-react";
+import { Loader2, Users, Trash2, Shield, User, CreditCard, Crown, KeyRound, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +23,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const roleConfig = {
   super_admin: { label: "Super Admin", icon: Crown, variant: "default" as const },
@@ -29,10 +41,17 @@ const roleConfig = {
 };
 
 const UserManagement = () => {
-  const { data: users, isLoading } = useUsers();
+  const { data: users, isLoading, refetch } = useUsers();
   const updateRole = useUpdateUserRole();
   const deleteRole = useDeleteUserRole();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editProfileDialog, setEditProfileDialog] = useState<{ open: boolean; userId: string; fullName: string; phone: string }>({
+    open: false,
+    userId: "",
+    fullName: "",
+    phone: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const handleRoleChange = (userId: string, newRole: string) => {
     updateRole.mutate(
@@ -41,6 +60,38 @@ const UserManagement = () => {
         onSuccess: () => setEditingUserId(null),
       }
     );
+  };
+
+  const handleEditProfile = (user: any) => {
+    setEditProfileDialog({
+      open: true,
+      userId: user.id,
+      fullName: user.full_name || "",
+      phone: user.phone || "",
+    });
+  };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editProfileDialog.fullName,
+          phone: editProfileDialog.phone,
+        })
+        .eq("user_id", editProfileDialog.userId);
+
+      if (error) throw error;
+
+      toast.success("Profil berhasil diperbarui");
+      setEditProfileDialog({ open: false, userId: "", fullName: "", phone: "" });
+      refetch();
+    } catch (error: any) {
+      toast.error("Gagal memperbarui profil: " + error.message);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -169,6 +220,14 @@ const UserManagement = () => {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProfile(user)}
+                            title="Edit Profil"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() =>
@@ -217,6 +276,52 @@ const UserManagement = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Edit Profile Dialog */}
+        <Dialog open={editProfileDialog.open} onOpenChange={(open) => 
+          !open && setEditProfileDialog({ open: false, userId: "", fullName: "", phone: "" })
+        }>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Profil Pengguna</DialogTitle>
+              <DialogDescription>
+                Perbarui informasi profil pengguna
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-fullname">Nama Lengkap</Label>
+                <Input
+                  id="edit-fullname"
+                  value={editProfileDialog.fullName}
+                  onChange={(e) => setEditProfileDialog(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Nama lengkap"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Nomor Telepon</Label>
+                <Input
+                  id="edit-phone"
+                  value={editProfileDialog.phone}
+                  onChange={(e) => setEditProfileDialog(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Nomor telepon"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditProfileDialog({ open: false, userId: "", fullName: "", phone: "" })}
+              >
+                Batal
+              </Button>
+              <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Simpan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

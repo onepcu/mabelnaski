@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,79 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSiteSettings, useUpdateSiteSettings } from "@/hooks/useSiteSettings";
-import { Loader2, Save, Store, Phone, Palette, FileText, Share2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Save, Store, Phone, Palette, FileText, Share2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+
+// Helper function to convert hex to HSL
+const hexToHsl = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return "";
+  
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
+// Helper function to convert HSL to hex
+const hslToHex = (hsl: string): string => {
+  const match = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+  if (!match) return "#000000";
+  
+  const h = parseInt(match[1]) / 360;
+  const s = parseInt(match[2]) / 100;
+  const l = parseInt(match[3]) / 100;
+
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+
+  const toHex = (x: number) => {
+    const hex = Math.round(x * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
 
 const SiteSettings = () => {
   const { data: settings, isLoading } = useSiteSettings();
   const updateSettings = useUpdateSiteSettings();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const [formData, setFormData] = useState({
     site_name: "",
@@ -48,9 +116,9 @@ const SiteSettings = () => {
         instagram_url: settings.instagram_url || "",
         facebook_url: settings.facebook_url || "",
         tiktok_url: settings.tiktok_url || "",
-        primary_color: settings.primary_color || "",
-        secondary_color: settings.secondary_color || "",
-        accent_color: settings.accent_color || "",
+        primary_color: settings.primary_color || "142 70% 45%",
+        secondary_color: settings.secondary_color || "142 40% 90%",
+        accent_color: settings.accent_color || "142 60% 55%",
         theme_mode: settings.theme_mode || "light",
         hero_title: settings.hero_title || "",
         hero_subtitle: settings.hero_subtitle || "",
@@ -62,6 +130,54 @@ const SiteSettings = () => {
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleColorChange = (field: string, hexValue: string) => {
+    const hslValue = hexToHsl(hexValue);
+    setFormData((prev) => ({ ...prev, [field]: hslValue }));
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 2MB");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      handleChange("logo_url", publicUrl);
+      toast.success("Logo berhasil diupload");
+    } catch (error: any) {
+      toast.error("Gagal upload logo: " + error.message);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    handleChange("logo_url", "");
   };
 
   const handleSave = () => {
@@ -138,13 +254,56 @@ const SiteSettings = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="logo_url">URL Logo</Label>
-                    <Input
-                      id="logo_url"
-                      value={formData.logo_url}
-                      onChange={(e) => handleChange("logo_url", e.target.value)}
-                      placeholder="https://example.com/logo.png"
-                    />
+                    <Label>Logo Toko</Label>
+                    <div className="flex items-center gap-4">
+                      {formData.logo_url ? (
+                        <div className="relative">
+                          <img 
+                            src={formData.logo_url} 
+                            alt="Logo" 
+                            className="h-16 w-16 object-contain border rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6"
+                            onClick={handleRemoveLogo}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="h-16 w-16 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground">
+                          <Store className="h-6 w-6" />
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-2" />
+                          )}
+                          Upload Logo
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Format: JPG, PNG. Maks 2MB
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -259,34 +418,58 @@ const SiteSettings = () => {
                 <CardTitle>Pengaturan Tema</CardTitle>
                 <CardDescription>Kustomisasi warna dan tampilan website</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="primary_color">Warna Primary (HSL)</Label>
-                    <Input
-                      id="primary_color"
-                      value={formData.primary_color}
-                      onChange={(e) => handleChange("primary_color", e.target.value)}
-                      placeholder="142 70% 45%"
-                    />
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div className="space-y-3">
+                    <Label htmlFor="primary_color">Warna Primary</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        id="primary_color"
+                        value={hslToHex(formData.primary_color)}
+                        onChange={(e) => handleColorChange("primary_color", e.target.value)}
+                        className="h-10 w-16 rounded border cursor-pointer"
+                      />
+                      <div 
+                        className="h-10 flex-1 rounded border"
+                        style={{ backgroundColor: hslToHex(formData.primary_color) }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Warna utama untuk tombol dan aksen</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="secondary_color">Warna Secondary (HSL)</Label>
-                    <Input
-                      id="secondary_color"
-                      value={formData.secondary_color}
-                      onChange={(e) => handleChange("secondary_color", e.target.value)}
-                      placeholder="142 40% 90%"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="secondary_color">Warna Secondary</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        id="secondary_color"
+                        value={hslToHex(formData.secondary_color)}
+                        onChange={(e) => handleColorChange("secondary_color", e.target.value)}
+                        className="h-10 w-16 rounded border cursor-pointer"
+                      />
+                      <div 
+                        className="h-10 flex-1 rounded border"
+                        style={{ backgroundColor: hslToHex(formData.secondary_color) }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Warna untuk elemen sekunder</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="accent_color">Warna Accent (HSL)</Label>
-                    <Input
-                      id="accent_color"
-                      value={formData.accent_color}
-                      onChange={(e) => handleChange("accent_color", e.target.value)}
-                      placeholder="142 60% 55%"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="accent_color">Warna Accent</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        id="accent_color"
+                        value={hslToHex(formData.accent_color)}
+                        onChange={(e) => handleColorChange("accent_color", e.target.value)}
+                        className="h-10 w-16 rounded border cursor-pointer"
+                      />
+                      <div 
+                        className="h-10 flex-1 rounded border"
+                        style={{ backgroundColor: hslToHex(formData.accent_color) }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Warna untuk highlight dan aksen</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -295,7 +478,7 @@ const SiteSettings = () => {
                     value={formData.theme_mode}
                     onValueChange={(value) => handleChange("theme_mode", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full md:w-[200px]">
                       <SelectValue placeholder="Pilih mode tema" />
                     </SelectTrigger>
                     <SelectContent>
