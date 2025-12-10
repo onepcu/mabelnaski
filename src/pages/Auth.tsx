@@ -33,7 +33,7 @@ const Auth = () => {
           .eq("user_id", session.user.id)
           .single();
 
-        if (roleData?.role === "admin") {
+        if (roleData?.role === "super_admin" || roleData?.role === "admin") {
           navigate("/admin/dashboard");
         } else if (roleData?.role === "kasir") {
           navigate("/admin/kasir");
@@ -70,7 +70,7 @@ const Auth = () => {
         toast.success("Login berhasil!");
         
         // Redirect based on role
-        if (roleData?.role === "admin") {
+        if (roleData?.role === "super_admin" || roleData?.role === "admin") {
           navigate("/admin/dashboard");
         } else if (roleData?.role === "kasir") {
           navigate("/admin/kasir");
