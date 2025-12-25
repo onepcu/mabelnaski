@@ -4,11 +4,13 @@ import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
 import { ProductSkeleton } from "@/components/ProductSkeleton";
 import { useProducts } from "@/hooks/useProducts";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Truck, Shield, HeadphonesIcon } from "lucide-react";
 import heroImage from "@/assets/hero-furniture.jpg";
 
 const Index = () => {
+  const { data: settings } = useSiteSettings();
   const { products, isLoading } = useProducts();
   // Featured products based on order count (trending)
   const featuredProducts = [...products]
@@ -33,11 +35,10 @@ const Index = () => {
         <div className="relative container mx-auto px-4 h-full flex items-center">
           <div className="max-w-2xl text-primary-foreground">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-in slide-in-from-bottom-4 duration-700">
-              Koleksi Mebel Premium untuk Rumah Impian
+              {settings?.hero_title || "Koleksi Mebel Premium untuk Rumah Impian"}
             </h1>
             <p className="text-xl mb-8 text-primary-foreground/90 animate-in slide-in-from-bottom-5 duration-700">
-              Temukan furnitur berkualitas tinggi dengan desain modern dan material pilihan. 
-              Wujudkan rumah yang nyaman dan estetik.
+              {settings?.hero_subtitle || "Temukan furnitur berkualitas tinggi dengan desain modern dan material pilihan. Wujudkan rumah yang nyaman dan estetik."}
             </p>
             <div className="flex flex-wrap gap-4 animate-in slide-in-from-bottom-6 duration-700">
               <Link to="/products">

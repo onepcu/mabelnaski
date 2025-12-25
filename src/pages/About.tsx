@@ -3,8 +3,10 @@ import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Award, Users, Heart, Target } from "lucide-react";
 import aboutShowroom from "@/assets/about-showroom.jpg";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const About = () => {
+  const { data: settings } = useSiteSettings();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -20,11 +22,10 @@ const About = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent flex items-end">
             <div className="p-8 md:p-12">
               <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                Tentang MebelKu
+                Tentang {settings?.site_name || "MebelKu"}
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl">
-                Menyediakan mebel berkualitas tinggi dengan desain modern untuk menciptakan 
-                ruang hidup yang nyaman dan estetik sejak 2020.
+                {settings?.about_content || "Menyediakan mebel berkualitas tinggi dengan desain modern untuk menciptakan ruang hidup yang nyaman dan estetik sejak 2020."}
               </p>
             </div>
           </div>

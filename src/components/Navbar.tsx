@@ -12,8 +12,10 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const Navbar = () => {
+  const { data: settings } = useSiteSettings();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -74,7 +76,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-primary">MebelKu</div>
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt={settings.site_name || "Logo"} className="h-10 object-contain" />
+            ) : (
+              <div className="text-2xl font-bold text-primary">{settings?.site_name || "MebelKu"}</div>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
