@@ -22,6 +22,7 @@ export interface SiteSettings {
   hero_subtitle: string | null;
   about_content: string | null;
   footer_text: string | null;
+  operational_hours: string | null;
   created_at: string;
   updated_at: string;
 }

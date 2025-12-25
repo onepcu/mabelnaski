@@ -101,6 +101,7 @@ const SiteSettings = () => {
     hero_subtitle: "",
     about_content: "",
     footer_text: "",
+    operational_hours: "",
   });
 
   useEffect(() => {
@@ -124,6 +125,7 @@ const SiteSettings = () => {
         hero_subtitle: settings.hero_subtitle || "",
         about_content: settings.about_content || "",
         footer_text: settings.footer_text || "",
+        operational_hours: settings.operational_hours || "",
       });
     }
   }, [settings]);
@@ -369,6 +371,19 @@ const SiteSettings = () => {
                     placeholder="Alamat lengkap toko Anda"
                     rows={3}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="operational_hours">Jam Operasional</Label>
+                  <Textarea
+                    id="operational_hours"
+                    value={formData.operational_hours}
+                    onChange={(e) => handleChange("operational_hours", e.target.value)}
+                    placeholder="Senin - Jumat: 08:00 - 17:00&#10;Sabtu: 09:00 - 15:00&#10;Minggu: Tutup"
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Pisahkan setiap baris dengan enter untuk format yang rapi
+                  </p>
                 </div>
               </CardContent>
             </Card>
