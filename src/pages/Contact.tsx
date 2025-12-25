@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const Contact = () => {
+  const { data: settings } = useSiteSettings();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,31 +19,27 @@ const Contact = () => {
     message: "",
   });
 
+  const whatsappNumber = settings?.whatsapp_number || "6281234567890";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validasi form
     if (!formData.name || !formData.message) {
       toast.error("Nama dan pesan harus diisi!");
       return;
     }
 
-    // Format pesan WhatsApp
     let whatsappMessage = `Halo, saya ingin berkonsultasi:\n\n`;
     whatsappMessage += `Nama: ${formData.name}\n`;
     if (formData.email) whatsappMessage += `Email: ${formData.email}\n`;
     if (formData.phone) whatsappMessage += `Telepon: ${formData.phone}\n`;
     whatsappMessage += `\nPesan:\n${formData.message}`;
 
-    // Nomor WhatsApp Alam
-    const phoneNumber = "6281234567890"; // Ganti dengan nomor WhatsApp Alam
     const encodedMessage = encodeURIComponent(whatsappMessage);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-    // Buka WhatsApp
     window.open(whatsappUrl, "_blank");
     
-    // Reset form
     setFormData({ name: "", email: "", phone: "", message: "" });
     toast.success("Mengarahkan ke WhatsApp...");
   };
@@ -79,10 +77,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Alamat</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Jl. Mebel Raya No. 123<br />
-                      Jakarta Selatan 12345<br />
-                      Indonesia
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {settings?.address || "Alamat belum diatur"}
                     </p>
                   </div>
                 </div>
@@ -94,8 +90,7 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Telepon</h3>
                     <p className="text-sm text-muted-foreground">
-                      +62 812-3456-7890<br />
-                      +62 21-1234-5678
+                      {settings?.phone || "Telepon belum diatur"}
                     </p>
                   </div>
                 </div>
@@ -107,8 +102,7 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Email</h3>
                     <p className="text-sm text-muted-foreground">
-                      info@mebelku.com<br />
-                      support@mebelku.com
+                      {settings?.email || "Email belum diatur"}
                     </p>
                   </div>
                 </div>
@@ -119,10 +113,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Jam Operasional</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Senin - Jumat: 08.00 - 17.00<br />
-                      Sabtu: 09.00 - 15.00<br />
-                      Minggu: Tutup
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {settings?.operational_hours || "Jam operasional belum diatur"}
                     </p>
                   </div>
                 </div>
@@ -139,7 +131,7 @@ const Contact = () => {
                 <Button 
                   variant="outline" 
                   className="w-full border-secondary-foreground text-secondary-foreground hover:bg-secondary-foreground hover:text-secondary"
-                  onClick={() => window.open("https://wa.me/6281234567890", "_blank")}
+                  onClick={() => window.open(`https://wa.me/${whatsappNumber}`, "_blank")}
                 >
                   Chat Sekarang
                 </Button>
